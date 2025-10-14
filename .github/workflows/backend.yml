@@ -17,9 +17,7 @@ jobs:
       packages: write
 
     env:
-    GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/backend-api
-
-      
+      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/backend-api
 
     steps:
       - name: Checkout code
@@ -50,4 +48,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
 

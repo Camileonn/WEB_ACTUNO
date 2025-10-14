@@ -17,7 +17,7 @@ jobs:
       packages: write
 
     env:
-  GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/frontend-app
+      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/frontend-app
 
     steps:
       - name: Checkout code
@@ -48,6 +48,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
 
 
