@@ -9,9 +9,7 @@ on:
     paths:
       - 'frontend/**'
 
-# Definición global de la parte simple del nombre de la imagen.
-env:
-  IMAGE_NAME: frontend-app
+# Se elimina la sección 'env' global para evitar el error de sintaxis.
 
 jobs:
   build-and-push:
@@ -20,10 +18,13 @@ jobs:
       contents: read
       packages: write
       
-    # Definimos la URL de repositorio DENTRO del job, donde ${{ env.IMAGE_NAME }} es seguro.
+    # Definimos la URL de repositorio DENTRO del job.
     env:
-      # RUTA COMPLETA EN MINÚSCULAS para evitar errores de pull en Docker.
-      GHCR_REPOSITORY: ghcr.io/camileonn/web_actuno/${{ env.IMAGE_NAME }}
+      # Definición robusta de la URL:
+      # 1. Obtenemos el nombre completo del repositorio (Camileonn/WEB_ACTUNO).
+      # 2. Forzamos todo a minúsculas con la función 'lowercase()' de GitHub Actions.
+      # 3. Añadimos el sufijo del nombre de la imagen: /frontend-app
+      GHCR_REPOSITORY: ghcr.io/${{ github.repository | lowercase }}/frontend-app
 
     steps:
       - name: Checkout code
