@@ -17,7 +17,9 @@ jobs:
       packages: write
 
     env:
-      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ github.repository.name }}/backend-api
+    GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/backend-api
+
+      
 
     steps:
       - name: Checkout code
