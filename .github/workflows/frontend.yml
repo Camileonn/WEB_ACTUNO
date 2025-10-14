@@ -5,21 +5,25 @@ on:
     branches:
       - main
     tags:
-      - 'v*.*.*' # Corregido a v*.*.* para coincidir con la tarea
+      - 'v*.*.*'
     paths:
-      - 'frontend/**' # Filtro por ruta
+      - 'frontend/**'
 
+# Definición global de la parte simple del nombre de la imagen.
 env:
-  # Definición del repositorio en MINÚSCULAS para evitar errores de GHCR
   IMAGE_NAME: frontend-app
-  GHCR_REPOSITORY: ghcr.io/camileonn/web_actuno/${{ env.IMAGE_NAME }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # Permiso necesario para subir a ghcr.io
+      packages: write
+      
+    # Definimos la URL de repositorio DENTRO del job, donde ${{ env.IMAGE_NAME }} es seguro.
+    env:
+      # RUTA COMPLETA EN MINÚSCULAS para evitar errores de pull en Docker.
+      GHCR_REPOSITORY: ghcr.io/camileonn/web_actuno/${{ env.IMAGE_NAME }}
 
     steps:
       - name: Checkout code
@@ -32,25 +36,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Usa docker/metadata-action para generar automáticamente los tags (v1.0.0, latest, sha)
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.GHCR_REPOSITORY }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }} # Tag 'latest' solo en push a main
-            type=semver,pattern=v{{version}} # Tag v.*.*.* si existe un tag de Git
-            type=sha,prefix=sha- # Tag de respaldo
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }} 
+            type=semver,pattern=v{{version}} 
+            type=sha,prefix=sha-
 
-      # Usa docker/build-push-action, que es más eficiente para builds y tags múltiples
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./frontend/Dockerfile # Construye desde el directorio frontend/
+          file: ./frontend/Dockerfile 
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha # Uso de caché
-          cache-to: type=gha,mode=max
