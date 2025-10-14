@@ -1,36 +1,52 @@
-services:
-  mongo:
-    # Imagen de MongoDB sin cambios
-    image: mirror.gcr.io/library/mongo:latest
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin_user 
-      MONGO_INITDB_ROOT_PASSWORD: web3
-    ports:
-      - "27020:27017"
-    networks:
-      - web-network
+name: CI/CD Frontend - Build and Push Docker Image
 
-  calculadora:
-    # 🚨 CORREGIDO: Todo en minúsculas para GHCR (camileonn/web_act1)
-    image: ghcr.io/camileonn/web_act1/backend-api:latest 
-    ports:
-      - "8089:8000"
-    depends_on:
-      - mongo
-    networks:
-      - web-network
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+    paths:
+      - 'frontend/**'
 
-  frontend:
-    # 🚨 CORREGIDO: Todo en minúsculas para GHCR (camileonn/web_act1)
-    image: ghcr.io/camileonn/web_act1/frontend-app:latest 
-    ports:
-      - "5173:5173"
-    depends_on:
-      - calculadora
-    networks:
-      - web-network
+# ESTE BLOQUE 'env' DEBE ESTAR AL MISMO NIVEL QUE 'on' Y 'jobs'
+env:
+  IMAGE_NAME: frontend-app
+  GHCR_REPOSITORY: ghcr.io/camileonn/web_actuno/${{ env.IMAGE_NAME }}
 
-networks:
-  web-network:
-    driver: bridge
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_REPOSITORY }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }} 
+            type=semver,pattern=v{{version}} 
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./frontend/Dockerfile 
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

@@ -12,7 +12,7 @@ on:
 env:
   # Definición del repositorio en MINÚSCULAS para evitar errores de GHCR
   IMAGE_NAME: frontend-app
-  GHCR_REPOSITORY: ghcr.io/camileonn/web_act1/${{ env.IMAGE_NAME }}
+  GHCR_REPOSITORY: ghcr.io/camileonn/web_actuno/${{ env.IMAGE_NAME }}
 
 jobs:
   build-and-push:
