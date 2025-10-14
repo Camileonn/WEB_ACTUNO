@@ -17,8 +17,7 @@ jobs:
       packages: write
 
     env:
-      # ✅ Corregido: sin el operador '|' inválido.
-      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/backend-api
+      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ github.repository.name }}/backend-api
 
     steps:
       - name: Checkout code
@@ -37,17 +36,17 @@ jobs:
         with:
           images: ${{ env.GHCR_REPOSITORY }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=semver,pattern=v{{version}}
             type=sha,prefix=sha-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
           file: ./backend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,name=backend-cache
