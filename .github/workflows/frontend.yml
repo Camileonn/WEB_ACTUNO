@@ -1,21 +1,26 @@
-name: Build and Push Frontend Docker Image
+name: CI/CD Frontend - Build and Push Docker Image
 
 on:
   push:
     branches:
       - main
-      - 'release/*'
     tags:
-      - 'v*'
+      - 'v*.*.*' # Corregido a v*.*.* para coincidir con la tarea
     paths:
-      - 'frontend/**' # <-- IMPORTANTE: Solo se ejecuta si hay cambios aquí
+      - 'frontend/**' # Filtro por ruta
+
+env:
+  # Definición del repositorio en MINÚSCULAS para evitar errores de GHCR
+  IMAGE_NAME: frontend-app
+  GHCR_REPOSITORY: ghcr.io/camileonn/web_act1/${{ env.IMAGE_NAME }}
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      packages: write # Permiso necesario para subir a ghcr.io
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,30 +32,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine image tag
-        id: vars
-        run: |
-          # Usa GITHUB_REF para detectar si el push fue un tag
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            TAG=${GITHUB_REF#refs/tags/}
-            echo "TAG=$TAG" >> $GITHUB_ENV
-          else
-            echo "TAG=latest" >> $GITHUB_ENV
-          fi
+      # Usa docker/metadata-action para generar automáticamente los tags (v1.0.0, latest, sha)
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_REPOSITORY }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }} # Tag 'latest' solo en push a main
+            type=semver,pattern=v{{version}} # Tag v.*.*.* si existe un tag de Git
+            type=sha,prefix=sha- # Tag de respaldo
 
-      - name: Determine image name (lowercase)
-        run: |
-          # Convierte el nombre del repositorio a minúsculas y añade el sufijo /frontend
-          IMAGE=ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')/frontend
-          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-
-      - name: Build Docker image
-        run: |
-          echo "Building image: $IMAGE:$TAG"
-          # Construye la imagen desde el directorio ./frontend
-          docker build -t $IMAGE:$TAG ./frontend
-
-      - name: Push Docker image
-        run: |
-          echo "Pushing image: $IMAGE:$TAG"
-          docker push $IMAGE:$TAG
+      # Usa docker/build-push-action, que es más eficiente para builds y tags múltiples
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./frontend/Dockerfile # Construye desde el directorio frontend/
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha # Uso de caché
+          cache-to: type=gha,mode=max

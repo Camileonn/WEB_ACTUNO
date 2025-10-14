@@ -1,5 +1,6 @@
 services:
   mongo:
+    # Imagen de MongoDB sin cambios
     image: mirror.gcr.io/library/mongo:latest
     restart: always
     environment:
@@ -8,35 +9,28 @@ services:
     ports:
       - "27020:27017"
     networks:
-      - mongo-network
+      - web-network
 
   calculadora:
-    image: calculadora-fast-api
-    build: ./backend
+    # 🚨 CORREGIDO: Todo en minúsculas para GHCR (camileonn/web_act1)
+    image: ghcr.io/camileonn/web_act1/backend-api:latest 
     ports:
       - "8089:8000"
-    volumes:
-      - ./backend:/app
     depends_on:
       - mongo
     networks:
-      - mongo-network
+      - web-network
 
   frontend:
-    image: frontend-react
-    build: ./frontend
+    # 🚨 CORREGIDO: Todo en minúsculas para GHCR (camileonn/web_act1)
+    image: ghcr.io/camileonn/web_act1/frontend-app:latest 
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - calculadora
     networks:
-      - mongo-network
+      - web-network
 
 networks:
-  mongo-network:
+  web-network:
     driver: bridge
