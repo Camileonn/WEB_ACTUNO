@@ -9,21 +9,16 @@ on:
     paths:
       - 'frontend/**'
 
-# Se elimina la sección 'env' global para evitar el error de sintaxis.
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-      
-    # Definimos la URL de repositorio DENTRO del job.
+
     env:
-      # CORRECCIÓN DEFINITIVA: 
-      # Usamos el dueño del repositorio (owner) con la función lower() de GitHub.
-      # Esto elimina el error 'Unexpected symbol: |' y garantiza MINÚSCULAS.
-      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name | lower }}/frontend-app
+      # ✅ Sin el operador | (que es inválido)
+      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/frontend-app
 
     steps:
       - name: Checkout code
@@ -42,15 +37,16 @@ jobs:
         with:
           images: ${{ env.GHCR_REPOSITORY }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }} 
-            type=semver,pattern=v{{version}} 
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=semver,pattern=v{{version}}
             type=sha,prefix=sha-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./frontend/Dockerfile 
+          file: ./frontend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
