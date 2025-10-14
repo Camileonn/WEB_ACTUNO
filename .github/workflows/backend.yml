@@ -9,8 +9,6 @@ on:
     paths:
       - 'backend/**'
 
-# Se elimina la sección 'env' global de IMAGE_NAME para evitar errores de sintaxis en el validador YAML.
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -18,11 +16,9 @@ jobs:
       contents: read
       packages: write
 
-    # Definimos la URL de repositorio DENTRO del job.
     env:
-      # CORRECCIÓN DE SINTAXIS: Usamos la función lower() de GitHub Actions 
-      # para garantizar MINÚSCULAS en la URL, sin romper la validación YAML.
-      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name | lower }}/backend-api
+      # ✅ Corregido: sin el operador '|' inválido.
+      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/backend-api
 
     steps:
       - name: Checkout code
@@ -41,17 +37,17 @@ jobs:
         with:
           images: ${{ env.GHCR_REPOSITORY }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }} 
-            type=semver,pattern=v{{version}} 
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=semver,pattern=v{{version}}
             type=sha,prefix=sha-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./backend/Dockerfile 
+          file: ./backend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha 
+          cache-from: type=gha
           cache-to: type=gha,mode=max

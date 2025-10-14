@@ -9,10 +9,9 @@ on:
     paths:
       - 'frontend/**'
 
-# ESTE BLOQUE 'env' DEBE ESTAR AL MISMO NIVEL QUE 'on' Y 'jobs'
+# Variables globales
 env:
   IMAGE_NAME: frontend-app
-  GHCR_REPOSITORY: ghcr.io/camileonn/web_actuno/${{ env.IMAGE_NAME }}
 
 jobs:
   build-and-push:
@@ -20,6 +19,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+
+    # ✅ Aquí sí puedes construir dinámicamente el GHCR_REPOSITORY
+    env:
+      GHCR_REPOSITORY: ghcr.io/camileonn/web_actuno/${{ env.IMAGE_NAME }}
 
     steps:
       - name: Checkout code
@@ -38,15 +41,16 @@ jobs:
         with:
           images: ${{ env.GHCR_REPOSITORY }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }} 
-            type=semver,pattern=v{{version}} 
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=semver,pattern=v{{version}}
             type=sha,prefix=sha-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./frontend/Dockerfile 
+          file: ./frontend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
